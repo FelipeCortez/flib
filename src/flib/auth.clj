@@ -17,9 +17,9 @@
 (comment
   (def jwt-secret "hunter2")
 
-  (def signed
-    (buddy.jwt/sign {:user "felipecortez"}
-                    jwt-secret))
+  @(def signed
+     (buddy.jwt/sign {:user "felipecortez"}
+                     jwt-secret))
 
   (buddy.jwt/unsign signed "something-else")
   (buddy.jwt/unsign signed jwt-secret)
@@ -34,10 +34,10 @@
 
   nil)
 
-(def !accounts (atom {}))
+(defonce !usernames->passwords (atom {}))
 
 (defn with-auth-cookie [request username]
-  (assoc-in request ["headers" "Set-Cookie"]
+  (assoc-in request [:headers "Set-Cookie"]
             (str "jwt="
                  (buddy.jwt/sign {:user username
                                   :iat (time/unix-time)
@@ -47,33 +47,46 @@
 
 ;; in practice
 (defroutes app
-  (GET "/" request "home")
+  (GET "/" request
+       (or (some-> request :cookies (get "jwt") (get :value)
+                   (buddy.jwt/unsign jwt-secret)
+                   :user
+                   (str " is the user"))
+           "unauthenticated"))
   (GET "/dbg" request
        (str @(def request request)))
 
   (GET "/register" []
        (dom/page
         {:body [:form {:action "/register" :method "POST"}
-                [:input {:name "user"}]
+                [:input {:name "username"}]
                 [:input {:name "password"}]
                 [:input {:type "submit"}]]}))
-  (POST "/register" {{:strs [user password]} :params}
-        (swap! !accounts assoc user password)
+  (POST "/register" {{:strs [username password]} :params}
+        (swap! !usernames->passwords assoc username password)
         (with-auth-cookie {:status 301, :headers {"Location" "/"}}
-          "felipecortez"))
+          username))
 
   (GET "/login" []
        (dom/page
         {:body [:form {:action "/login" :method "POST"}
-                [:input {:name "user"}]
+                [:input {:name "username"}]
                 [:input {:name "password"}]
                 [:input {:type "submit"}]]}))
 
-  (POST "/login" {{:strs [user password]} :params}
-        (do (def request request)
-            (dom/page {:body [:pre (str user "-" password "-"
-                                        (buddy.jwt/sign {:user user}
-                                                        jwt-secret))]})))
+  (POST "/login" {{:strs [username password]} :params}
+        (if (= (get @!usernames->passwords username) password)
+          (with-auth-cookie {:status 301, :headers {"Location" "/"}}
+            username)
+          (dom/page
+           {:body
+            [:div
+             [:p "Wrong!"]
+             [:form {:action "/login" :method "POST"}
+                   [:input {:name "username"}]
+                   [:input {:name "password"}]
+                   [:input {:type "submit"}]]]})))
+
   (route/not-found (dom/page {:body [:div "Hi, world"]})))
 
 (defn wrap-auth [handler]
