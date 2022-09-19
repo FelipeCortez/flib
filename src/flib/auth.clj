@@ -2,6 +2,7 @@
   (:require [buddy.auth :refer [authenticated? throw-unauthorized]]
             [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]]
             [buddy.auth.backends :as buddy.backends]
+            [buddy.hashers]
             [buddy.sign.jwt :as buddy.jwt]
             [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
@@ -16,6 +17,11 @@
 
 (comment
   (def jwt-secret "hunter2")
+  (def hash-secret "hunter3")
+
+  (buddy.hashers/verify
+    "hunter4"
+    (buddy.hashers/derive "hunter4"))
 
   @(def signed
      (buddy.jwt/sign {:user "felipecortez"}
@@ -36,10 +42,15 @@
 
 (defonce !usernames->passwords (atom {}))
 
+(comment
+  (reset! !usernames->passwords {})
+  (buddy.hashers/verify "hunter2" (get @!usernames->passwords "user"))
+  )
+
 (defn with-auth-cookie [request username]
   (assoc-in request [:headers "Set-Cookie"]
             (str "jwt="
-                 (buddy.jwt/sign {:user username
+                 (buddy.jwt/sign {:username username
                                   :iat (time/unix-time)
                                   :exp (time/unix-time-plus-minutes 60)}
                                  jwt-secret)
@@ -48,13 +59,22 @@
 ;; in practice
 (defroutes app
   (GET "/" request
-       (or (some-> request :cookies (get "jwt") (get :value)
-                   (buddy.jwt/unsign jwt-secret)
-                   :user
-                   (str " is the user"))
-           "unauthenticated"))
+       (let [username (some-> request :cookies (get "jwt") (get :value)
+                              (buddy.jwt/unsign jwt-secret)
+                              :username)]
+         (dom/page
+          {:body
+           [:div (or (and username
+                          [:div
+                           (str "logged in as " username)
+                           [:form {:action "/logout" :method "POST"}]])
+                     "unauthenticated")]})))
   (GET "/dbg" request
        (str @(def request request)))
+
+  (GET "/logout" request
+       {:status 301, :headers {"Location" "/"
+                               "Set-Cookie" "jwt=/; Max-Age=-1"}})
 
   (GET "/register" []
        (dom/page
@@ -63,7 +83,9 @@
                 [:input {:name "password"}]
                 [:input {:type "submit"}]]}))
   (POST "/register" {{:strs [username password]} :params}
-        (swap! !usernames->passwords assoc username password)
+        (def username username)
+        (def password password)
+        (swap! !usernames->passwords assoc username (buddy.hashers/derive password))
         (with-auth-cookie {:status 301, :headers {"Location" "/"}}
           username))
 
@@ -75,7 +97,7 @@
                 [:input {:type "submit"}]]}))
 
   (POST "/login" {{:strs [username password]} :params}
-        (if (= (get @!usernames->passwords username) password)
+        (if (buddy.hashers/verify password (get @!usernames->passwords username))
           (with-auth-cookie {:status 301, :headers {"Location" "/"}}
             username)
           (dom/page
