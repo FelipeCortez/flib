@@ -1,15 +1,16 @@
 (ns flib.server
-  (:require [compojure.core :refer [defroutes GET PUT POST]]
+  (:require [buddy.auth :refer [authenticated? throw-unauthorized]]
+            [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]]
+            [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
+            [ring.adapter.jetty9 :as jetty]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.json :refer [wrap-json-body]]
-            [ring.middleware.params :refer [wrap-params]]
-            [buddy.auth :refer [authenticated? throw-unauthorized]]
-            [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]]))
+            [ring.middleware.params :refer [wrap-params]]))
 
 (defroutes app
   (route/files "/" {:root "build/"})
-  (route/not-found "<h1>Página não encontrada :(</h1>"))
+  (route/not-found "<h1>Num achei!</h1>"))
 
 (defn wrap-restrict [handler]
   (fn [request]
@@ -17,19 +18,14 @@
       (throw-unauthorized)
       (handler request))))
 
-
-(defn -main [] (server))
-
 (comment
   (defn server []
     (-> #'app
-        #_(wrap-authentication auth/backend)
-        #_(wrap-authorization auth/backend)
         (wrap-params)
         (wrap-cors :access-control-allow-origin [#".*"]
                    :access-control-allow-methods [:get :put :post :delete])
         (wrap-json-body {:keywords? true})
-        (jetty/run-jetty {:port 3000 :join? false})))
+        (jetty/run-jetty {:port 3333 :join? false})))
 
   (def server-instance (server))
   (.start server)
