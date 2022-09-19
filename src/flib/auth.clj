@@ -6,22 +6,69 @@
             [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
             [ring.adapter.jetty9 :as jetty]
+            [ring.middleware.cookies :refer [wrap-cookies]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.json :refer [wrap-json-body]]
             [ring.middleware.params :refer [wrap-params]]
 
-            [flib.dom :as dom]))
+            [flib.dom :as dom]
+            [flib.time :as time]))
 
-(def jwt-secret "hunter2")
+(comment
+  (def jwt-secret "hunter2")
 
+  (def signed
+    (buddy.jwt/sign {:user "felipecortez"}
+                    jwt-secret))
+
+  (buddy.jwt/unsign signed "something-else")
+  (buddy.jwt/unsign signed jwt-secret)
+
+  (def signed'
+    (buddy.jwt/sign {:user "felipecortez"
+                     :iat (time/unix-time)
+                     :exp (time/unix-time-plus-minutes 60)}
+                    jwt-secret))
+
+  (buddy.jwt/unsign signed' jwt-secret)
+
+  nil)
+
+(def !accounts (atom {}))
+
+(defn with-auth-cookie [request username]
+  (assoc-in request ["headers" "Set-Cookie"]
+            (str "jwt="
+                 (buddy.jwt/sign {:user username
+                                  :iat (time/unix-time)
+                                  :exp (time/unix-time-plus-minutes 60)}
+                                 jwt-secret)
+                 "; HttpOnly")))
+
+;; in practice
 (defroutes app
-  (GET "/" request)
+  (GET "/" request "home")
+  (GET "/dbg" request
+       (str @(def request request)))
+
+  (GET "/register" []
+       (dom/page
+        {:body [:form {:action "/register" :method "POST"}
+                [:input {:name "user"}]
+                [:input {:name "password"}]
+                [:input {:type "submit"}]]}))
+  (POST "/register" {{:strs [user password]} :params}
+        (swap! !accounts assoc user password)
+        (with-auth-cookie {:status 301, :headers {"Location" "/"}}
+          "felipecortez"))
+
   (GET "/login" []
        (dom/page
         {:body [:form {:action "/login" :method "POST"}
                 [:input {:name "user"}]
                 [:input {:name "password"}]
                 [:input {:type "submit"}]]}))
+
   (POST "/login" {{:strs [user password]} :params}
         (do (def request request)
             (dom/page {:body [:pre (str user "-" password "-"
@@ -40,8 +87,8 @@
 
 (defn server []
     (-> #'app
-        (wrap-auth)
         (wrap-params)
+        (wrap-cookies)
         (wrap-cors :access-control-allow-origin [#".*"]
                    :access-control-allow-methods [:get :put :post :delete])
         (wrap-json-body {:keywords? true})
