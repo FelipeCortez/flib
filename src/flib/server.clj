@@ -1,7 +1,5 @@
 (ns flib.server
-  (:require [site.templates.home :refer [beba-page]]
-            [site.templates.base :refer [*reloader?*]]
-            [compojure.core :refer [defroutes GET PUT POST]]
+  (:require [compojure.core :refer [defroutes GET PUT POST]]
             [compojure.route :as route]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.json :refer [wrap-json-body]]
