@@ -1,1 +1,20 @@
-{}
+{:paths ["src" "resources"]
+ :deps {; Server foundation
+        ring/ring {:mvn/version "1.9.5"}
+        ring/ring-json {:mvn/version "0.5.0"}
+        ring-cors/ring-cors {:mvn/version "0.1.13"}
+        info.sunng/ring-jetty9-adapter {:mvn/version "0.17.7"}
+        compojure/compojure {:mvn/version "1.6.2"}
+        hiccup/hiccup {:mvn/version "1.0.5"}
+
+        ; Auth
+        buddy/buddy-hashers {:mvn/version "1.8.158"}
+        buddy/buddy-auth {:mvn/version "3.0.1"}
+
+        ; DB, data
+        com.github.seancorfield/next.jdbc {:mvn/version "1.2.796"}
+        org.xerial/sqlite-jdbc {:mvn/version "3.36.0.3"}
+        org.clojure/data.csv {:mvn/version "1.0.1"}
+
+        ; Ops
+        babashka/process {:mvn/version "0.1.7"}}}
