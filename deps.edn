@@ -11,10 +11,13 @@
         buddy/buddy-hashers {:mvn/version "1.8.158"}
         buddy/buddy-auth {:mvn/version "3.0.1"}
 
+
         ; DB, data
         com.github.seancorfield/next.jdbc {:mvn/version "1.2.796"}
         org.xerial/sqlite-jdbc {:mvn/version "3.36.0.3"}
+        org.postgresql/postgresql {:mvn/version "42.2.10"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
+        com.zaxxer/HikariCP {:mvn/version "3.3.1"}
 
         ; Ops
         babashka/process {:mvn/version "0.1.7"}}}
