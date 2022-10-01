@@ -22,14 +22,18 @@ drop table address
 
   (jdbc/execute! ds ["
 create table address (
-  id int primary key,
+  id serial primary key,
   name varchar(32),
   email varchar(255)
 )"])
 
   (jdbc/execute! ds ["
-insert into address(id,name,email)
-  values(0, 'Sean Corfield','sean@corfield.org')"])
+insert into address(name,email)
+  values('Sean Corfield','sean@corfield.org')"])
+
+  (jdbc/execute! ds ["
+insert into address(name,email)
+  values('Felipe','test@felipecortez.net')"])
 
   (jdbc/execute! ds ["select * from address"])
   )
