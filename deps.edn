@@ -18,6 +18,15 @@
         org.postgresql/postgresql {:mvn/version "42.2.10"}
         org.clojure/data.csv {:mvn/version "1.0.1"}
         com.zaxxer/HikariCP {:mvn/version "3.3.1"}
+        com.xtdb/xtdb-core {:mvn/version "1.23.2"}
+        com.xtdb/xtdb-rocksdb {:mvn/version "1.23.2"}
+        metosin/malli {:mvn/version "0.11.0"}
+        io.github.jackrusher/mundaneum {:git/sha "0ba6321701718f16daacbb6e36ba26548d79d86b"}
+
+        ; External APIs
+        metosin/jsonista {:mvn/version "0.3.7"}
+        clj-http/clj-http {:mvn/version "3.12.3"}
+        lambdaisland/deep-diff2 {:mvn/version "2.9.202"}
 
         ; Ops
         babashka/process {:mvn/version "0.1.7"}}}
