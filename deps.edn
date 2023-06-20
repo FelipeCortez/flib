@@ -28,5 +28,8 @@
         clj-http/clj-http {:mvn/version "3.12.3"}
         lambdaisland/deep-diff2 {:mvn/version "2.9.202"}
 
+        ; Notebook
+        io.github.nextjournal/clerk {:mvn/version "0.14.919"}
+
         ; Ops
         babashka/process {:mvn/version "0.1.7"}}}

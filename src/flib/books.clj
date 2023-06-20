@@ -4,12 +4,23 @@
             [flib.xt :as xt]
             [clj-http.client :as http]
             [jsonista.core :as j]
-            [lambdaisland.deep-diff2 :as ddiff]))
+            [lambdaisland.deep-diff2 :as ddiff]
+            [nextjournal.clerk :as clerk]))
+
+(clerk/table
+ (let [_run-at #inst "2023-06-20T23:03:10.772-00:00"]
+   (map first (xt/q '{:find [(pull e [*])]
+                      :where [[e :book/name]
+                              [e :thing/tags :music]]}))))
+
+(defn gbooks-search [term]
+  (-> (http/get (str "https://www.googleapis.com/books/v1/volumes?q=" term))
+      :body
+      j/read-value))
+
+(gbooks-search "discovery+of+slowness")
 
 (comment
-  (xt/q '{:find [(pull e [*])]
-          :where [[e :book/name]]})
-
   (xt/submit-tx [[:xtdb.api/put
                   (assoc (ffirst (xt/q '{:find [(pull e [*])]
                                          :where [[e :xt/id #uuid "d24bc7e7-95bb-4754-962a-d36a2f76b4a9"]]}))
@@ -22,9 +33,7 @@
   (search "The Discovery of Slowness")
   (clojurize-claims (entity-data :wd/Q911338))
 
-  (-> (http/get "https://www.googleapis.com/books/v1/volumes?q=discovery+of+slowness")
-      :body
-      j/read-value)
+
 
   (-> (http/get "https://www.googleapis.com/books/v1/volumes?q=chord-chemistry")
       :body
@@ -36,4 +45,6 @@
   (query `{:select [?pages]
            :where [[?pages ~(wdt :writing-language) ~(entity "Ancient Greek")]
                    [?person ~(wdt :occupation) ~(entity "philosopher")]]
-           :limit 20}))
+           :limit 20})
+
+  )
